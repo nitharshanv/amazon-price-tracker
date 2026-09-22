@@ -20,7 +20,13 @@ from telegram.ext import (
 
 from config import (
     CHECK_INTERVAL_MINUTES,
+    TELEGRAM_BASE_URL,
+    TELEGRAM_BOOTSTRAP_RETRIES,
     TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CONNECT_TIMEOUT,
+    TELEGRAM_PROXY,
+    TELEGRAM_READ_TIMEOUT,
+    TELEGRAM_WRITE_TIMEOUT,
     validate_config,
 )
 from providers import get_provider
@@ -379,12 +385,30 @@ def build_application() -> Application:
     """Build and configure the Telegram application."""
     validate_config()
 
-    application = (
+    builder = (
         ApplicationBuilder()
         .token(TELEGRAM_BOT_TOKEN)
+        .connect_timeout(TELEGRAM_CONNECT_TIMEOUT)
+        .read_timeout(TELEGRAM_READ_TIMEOUT)
+        .write_timeout(TELEGRAM_WRITE_TIMEOUT)
+        .pool_timeout(TELEGRAM_CONNECT_TIMEOUT)
+        .get_updates_connect_timeout(TELEGRAM_CONNECT_TIMEOUT)
+        .get_updates_read_timeout(TELEGRAM_READ_TIMEOUT)
+        .get_updates_write_timeout(TELEGRAM_WRITE_TIMEOUT)
+        .connection_pool_size(8)
+        .http_version("1.1")
         .post_init(post_init)
-        .build()
     )
+
+    if TELEGRAM_PROXY:
+        logger.info("Using Telegram proxy: %s", TELEGRAM_PROXY)
+        builder = builder.proxy(TELEGRAM_PROXY).get_updates_proxy(TELEGRAM_PROXY)
+
+    if TELEGRAM_BASE_URL:
+        logger.info("Using custom Telegram API base URL: %s", TELEGRAM_BASE_URL)
+        builder = builder.base_url(TELEGRAM_BASE_URL)
+
+    application = builder.build()
 
     # Main Conversation Handler (URL -> Target Price)
     conv_handler = ConversationHandler(
@@ -440,7 +464,11 @@ def main() -> None:
     print("  Amazon & Flipkart Price Tracker Bot (Raspberry Pi Edition)")
     print("=" * 60)
     app = build_application()
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(
+        drop_pending_updates=True,
+        bootstrap_retries=TELEGRAM_BOOTSTRAP_RETRIES,
+        timeout=30,
+    )
 
 
 if __name__ == "__main__":

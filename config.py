@@ -13,6 +13,12 @@ load_dotenv(BASE_DIR / ".env")
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CONNECT_TIMEOUT: float = float(os.getenv("TELEGRAM_CONNECT_TIMEOUT", "30.0"))
+TELEGRAM_READ_TIMEOUT: float = float(os.getenv("TELEGRAM_READ_TIMEOUT", "30.0"))
+TELEGRAM_WRITE_TIMEOUT: float = float(os.getenv("TELEGRAM_WRITE_TIMEOUT", "30.0"))
+TELEGRAM_BOOTSTRAP_RETRIES: int = int(os.getenv("TELEGRAM_BOOTSTRAP_RETRIES", "5"))
+TELEGRAM_PROXY: str = os.getenv("TELEGRAM_PROXY", "").strip()
+TELEGRAM_BASE_URL: str = os.getenv("TELEGRAM_BASE_URL", "").strip()
 
 # Scheduler settings
 CHECK_INTERVAL_MINUTES: int = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))
