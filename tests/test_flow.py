@@ -87,8 +87,7 @@ async def test_full_user_tracking_lifecycle(tmp_path: Path, monkeypatch):
     call_args = mock_bot.send_message.call_args[1]
     assert call_args["chat_id"] == user_id
     assert "₹24,499" in call_args["text"]
-    assert "₹25,000" in call_args["text"]
-    assert "PRICE ALERT" in call_args["text"]
+    assert ("TARGET REACHED" in call_args["text"] or "PRICE DROP" in call_args["text"])
     assert call_args["reply_markup"] is not None
 
     # Third check: Price remains 24499 -> No duplicate alert (anti-spam)

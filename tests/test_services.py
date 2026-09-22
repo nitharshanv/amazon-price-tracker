@@ -111,19 +111,17 @@ async def test_scheduler_deduplication_and_alerting(temp_storage: StorageManager
     scheduler = PriceCheckerScheduler(bot=mock_bot, storage=temp_storage)
 
     # RUN 1: Price drops to 24000
-    # user1 (target 25000) -> ALERT
-    # user2 (target 28000) -> ALERT
-    # user3 (target 20000) -> NO ALERT (24000 > 20000)
+    # Price changed: All 3 users get notified of the price drop!
     stats = await scheduler.check_all_prices()
 
     # Deduplication check: Provider was called only ONCE for all 3 users!
     assert fetch_call_count == 1
     assert stats["products_checked"] == 1
-    assert stats["alerts_sent"] == 2
-    assert mock_bot.send_message.call_count == 2
+    assert stats["alerts_sent"] == 3
+    assert mock_bot.send_message.call_count == 3
 
     # RUN 2: Anti-spam check. Price is still 24000.
-    # No new alerts should be sent to user1 or user2!
+    # Price did NOT change: 0 new alerts should be sent!
     mock_bot.send_message.reset_mock()
     stats2 = await scheduler.check_all_prices()
     assert stats2["alerts_sent"] == 0

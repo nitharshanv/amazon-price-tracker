@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 
-from config import MAX_CONCURRENT_REQUESTS
+from config import ALERT_ON_ANY_PRICE_CHANGE, MAX_CONCURRENT_REQUESTS
 import providers
 from storage import StorageManager
 from utils.formatter import format_currency
@@ -103,18 +103,29 @@ class PriceCheckerScheduler:
                 # Update product in storage (also updates price history if changed)
                 await self.storage.upsert_product(product_key, fresh_info.to_dict())
 
+                price_changed = (old_price is not None and new_price != old_price)
+
                 # Check all users tracking this product
                 users_tracking = await self.storage.get_users_tracking_product(product_key)
                 for user_id, track_info in users_tracking:
                     target_price = track_info.get("target_price")
                     last_alert = track_info.get("last_alert_price")
 
-                    # Alert condition: target met AND not already alerted at this exact price
-                    if (
+                    target_reached = (
                         target_price is not None
                         and new_price <= target_price
-                        and new_price != last_alert
-                    ):
+                    )
+
+                    # Alert condition:
+                    # 1. Price changed (up or down) from previous check
+                    # 2. Or target reached for the first time at this price level
+                    should_alert = False
+                    if ALERT_ON_ANY_PRICE_CHANGE and price_changed:
+                        should_alert = True
+                    elif target_reached and new_price != last_alert:
+                        should_alert = True
+
+                    if should_alert:
                         sent = await self._send_alert(
                             user_id=user_id,
                             product_key=product_key,
@@ -136,7 +147,7 @@ class PriceCheckerScheduler:
         product_key: str,
         product_info: Any,
         old_price: Optional[float],
-        target_price: float,
+        target_price: Optional[float],
     ) -> bool:
         """Send formatted alert message with Telegram inline keyboard."""
         if not self.bot:
@@ -144,17 +155,51 @@ class PriceCheckerScheduler:
             return False
 
         cur_str = format_currency(product_info.price, product_info.currency)
-        target_str = format_currency(target_price, product_info.currency)
         platform_name = product_info.platform.capitalize()
+        target_str = format_currency(target_price, product_info.currency) if target_price else "Not set"
+        target_reached = (target_price is not None and product_info.price <= target_price)
 
-        message = (
-            f"🚨 <b>PRICE ALERT!</b>\n\n"
-            f"📦 <b>{product_info.title}</b>\n\n"
-            f"💰 <b>Current Price:</b> {cur_str}\n"
-            f"🎯 <b>Target Price:</b> {target_str}\n"
-            f"🏪 <b>Platform:</b> {platform_name}\n\n"
-            f"📉 <i>Your target price has been reached!</i>"
-        )
+        if old_price is not None and product_info.price != old_price:
+            diff = product_info.price - old_price
+            diff_abs_str = format_currency(abs(diff), product_info.currency)
+            old_str = format_currency(old_price, product_info.currency)
+
+            if diff < 0:
+                # Price dropped
+                if target_reached:
+                    header = "🎯 <b>TARGET REACHED & PRICE DROP!</b>"
+                    footer = f"🎉 <i>Your target price ({target_str}) has been reached!</i>"
+                else:
+                    header = "📉 <b>PRICE DROP ALERT!</b>"
+                    footer = f"🎯 <b>Target:</b> {target_str}"
+
+                message = (
+                    f"{header}\n\n"
+                    f"📦 <b>{product_info.title}</b>\n\n"
+                    f"💰 <b>Current Price:</b> {cur_str} (⬇ -{diff_abs_str})\n"
+                    f"📊 <b>Previous Price:</b> {old_str}\n"
+                    f"🏪 <b>Platform:</b> {platform_name}\n\n"
+                    f"{footer}"
+                )
+            else:
+                # Price increased
+                message = (
+                    f"📈 <b>PRICE INCREASE NOTICE</b>\n\n"
+                    f"📦 <b>{product_info.title}</b>\n\n"
+                    f"💰 <b>Current Price:</b> {cur_str} (⬆ +{diff_abs_str})\n"
+                    f"📊 <b>Previous Price:</b> {old_str}\n"
+                    f"🎯 <b>Target:</b> {target_str}\n"
+                    f"🏪 <b>Platform:</b> {platform_name}"
+                )
+        else:
+            message = (
+                f"🎯 <b>PRICE TARGET REACHED!</b>\n\n"
+                f"📦 <b>{product_info.title}</b>\n\n"
+                f"💰 <b>Current Price:</b> {cur_str}\n"
+                f"🎯 <b>Target Price:</b> {target_str}\n"
+                f"🏪 <b>Platform:</b> {platform_name}\n\n"
+                f"📉 <i>Your target price has been reached!</i>"
+            )
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🛒 Open Product", url=product_info.url)]

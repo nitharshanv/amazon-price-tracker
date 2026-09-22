@@ -19,6 +19,7 @@ from telegram.ext import (
 )
 
 from config import (
+    CHECK_INTERVAL_HOURS,
     CHECK_INTERVAL_MINUTES,
     TELEGRAM_BASE_URL,
     TELEGRAM_BOOTSTRAP_RETRIES,
@@ -93,8 +94,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         "• <b>/history &lt;number&gt;:</b> View recent price history for a product.\n"
         "• <b>/check:</b> Trigger an instant price check on your tracked items.\n"
         "• <b>/cancel:</b> Cancel an active product addition.\n\n"
-        "💡 <i>Tip: Checks run automatically every "
-        f"{CHECK_INTERVAL_MINUTES} minutes.</i>"
+        "💡 <i>Tip: Checks run automatically thrice a day (every "
+        f"{CHECK_INTERVAL_HOURS} hours), alerting you on every price change.</i>"
     )
     await update.message.reply_text(help_text, parse_mode="HTML")
     return ConversationHandler.END
@@ -448,7 +449,11 @@ def build_application() -> Application:
             interval=interval_seconds,
             first=30,  # First check 30 seconds after bot boot
         )
-        logger.info("Scheduled repeating price check job every %d minutes", CHECK_INTERVAL_MINUTES)
+        logger.info(
+            "Scheduled repeating price check job every %d hours (%d minutes) - thrice a day",
+            CHECK_INTERVAL_HOURS,
+            CHECK_INTERVAL_MINUTES,
+        )
     else:
         logger.warning(
             "JobQueue is not enabled in python-telegram-bot! "

@@ -20,8 +20,10 @@ TELEGRAM_BOOTSTRAP_RETRIES: int = int(os.getenv("TELEGRAM_BOOTSTRAP_RETRIES", "5
 TELEGRAM_PROXY: str = os.getenv("TELEGRAM_PROXY", "").strip()
 TELEGRAM_BASE_URL: str = os.getenv("TELEGRAM_BASE_URL", "").strip()
 
-# Scheduler settings
-CHECK_INTERVAL_MINUTES: int = int(os.getenv("CHECK_INTERVAL_MINUTES", "30"))
+# Scheduler settings: Default thrice a day = every 8 hours (480 minutes)
+CHECK_INTERVAL_HOURS: int = int(os.getenv("CHECK_INTERVAL_HOURS", "8"))
+CHECK_INTERVAL_MINUTES: int = int(os.getenv("CHECK_INTERVAL_MINUTES", str(CHECK_INTERVAL_HOURS * 60)))
+ALERT_ON_ANY_PRICE_CHANGE: bool = os.getenv("ALERT_ON_ANY_PRICE_CHANGE", "true").lower() in ("true", "1", "yes")
 
 # Storage settings
 STORAGE_FILE: Path = BASE_DIR / os.getenv("STORAGE_FILE", "data/storage.json")
