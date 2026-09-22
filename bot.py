@@ -404,7 +404,7 @@ def build_application() -> Application:
         logger.info("Using Telegram proxy: %s", TELEGRAM_PROXY)
         builder = builder.proxy(TELEGRAM_PROXY).get_updates_proxy(TELEGRAM_PROXY)
 
-    if TELEGRAM_BASE_URL:
+    if TELEGRAM_BASE_URL and TELEGRAM_BASE_URL.rstrip("/") != "https://api.telegram.org/bot":
         logger.info("Using custom Telegram API base URL: %s", TELEGRAM_BASE_URL)
         builder = builder.base_url(TELEGRAM_BASE_URL)
 

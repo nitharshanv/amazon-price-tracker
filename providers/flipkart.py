@@ -65,10 +65,13 @@ class FlipkartProvider(ProductProvider):
         if not any(d in url.lower() for d in ("dl.flipkart.com", "fkrt.it")):
             return url
 
-        headers = {"User-Agent": DEFAULT_USER_AGENT}
+        headers = {
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT, follow_redirects=True) as client:
-                resp = await client.head(url, headers=headers)
+                resp = await client.get(url, headers=headers)
                 return str(resp.url)
         except Exception:
             return url

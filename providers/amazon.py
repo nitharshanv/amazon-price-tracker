@@ -88,10 +88,14 @@ class AmazonProvider(ProductProvider):
         if not any(d in url.lower() for d in ("amzn.in", "amzn.to", "amzn.eu")):
             return url
 
-        headers = {"User-Agent": DEFAULT_USER_AGENT}
+        headers = {
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
         try:
+            # Amazon CDN returns 404 to HEAD on amzn.in/d/..., but follows 301/302 on GET
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT, follow_redirects=True) as client:
-                resp = await client.head(url, headers=headers)
+                resp = await client.get(url, headers=headers)
                 return str(resp.url)
         except Exception:
             return url

@@ -47,8 +47,14 @@ DEFAULT_USER_AGENT: str = (
 
 def validate_config() -> None:
     """Validate required configuration at startup."""
-    if not TELEGRAM_BOT_TOKEN:
+    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "your_telegram_bot_token_here":
         raise ValueError(
-            "TELEGRAM_BOT_TOKEN is not set in environment or .env file! "
-            "Please obtain a token from @BotFather and set it."
+            "TELEGRAM_BOT_TOKEN is not set or is still the placeholder 'your_telegram_bot_token_here'!\n"
+            "Please open your .env file and replace it with your real token from @BotFather on Telegram."
+        )
+    if ":" not in TELEGRAM_BOT_TOKEN:
+        raise ValueError(
+            f"TELEGRAM_BOT_TOKEN '{TELEGRAM_BOT_TOKEN}' does not appear to be a valid Telegram bot token!\n"
+            "A valid token typically looks like '1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'.\n"
+            "Please obtain a valid token from @BotFather on Telegram."
         )
