@@ -167,8 +167,8 @@ class PriceCheckerScheduler:
             if diff < 0:
                 # Price dropped
                 if target_reached:
-                    header = "🎯 <b>TARGET REACHED & PRICE DROP!</b>"
-                    footer = f"🎉 <i>Your target price ({target_str}) has been reached!</i>"
+                    header = "🚨 <b>TARGET REACHED & PRICE DROP!</b>"
+                    footer = f"🎉 <i>Your target price ({target_str}) has been met!</i>"
                 else:
                     header = "📉 <b>PRICE DROP ALERT!</b>"
                     footer = f"🎯 <b>Target:</b> {target_str}"
@@ -176,9 +176,9 @@ class PriceCheckerScheduler:
                 message = (
                     f"{header}\n\n"
                     f"📦 <b>{product_info.title}</b>\n\n"
-                    f"💰 <b>Current Price:</b> {cur_str} (⬇ -{diff_abs_str})\n"
-                    f"📊 <b>Previous Price:</b> {old_str}\n"
-                    f"🏪 <b>Platform:</b> {platform_name}\n\n"
+                    f"📉 <b>PRICE CRASH:</b> <b>{cur_str}</b> (was <s>{old_str}</s>)\n"
+                    f"💰 <b>SAVED:</b> <b>-{diff_abs_str}</b>\n"
+                    f"🏪 <b>Platform:</b> <code>{platform_name} Verified</code>\n\n"
                     f"{footer}"
                 )
             else:
@@ -186,23 +186,27 @@ class PriceCheckerScheduler:
                 message = (
                     f"📈 <b>PRICE INCREASE NOTICE</b>\n\n"
                     f"📦 <b>{product_info.title}</b>\n\n"
-                    f"💰 <b>Current Price:</b> {cur_str} (⬆ +{diff_abs_str})\n"
+                    f"💰 <b>Current Price:</b> <b>{cur_str}</b> (⬆ +{diff_abs_str})\n"
                     f"📊 <b>Previous Price:</b> {old_str}\n"
                     f"🎯 <b>Target:</b> {target_str}\n"
-                    f"🏪 <b>Platform:</b> {platform_name}"
+                    f"🏪 <b>Platform:</b> <code>{platform_name} Verified</code>"
                 )
         else:
             message = (
-                f"🎯 <b>PRICE TARGET REACHED!</b>\n\n"
+                f"🎯 <b>TARGET REACHED!</b>\n\n"
                 f"📦 <b>{product_info.title}</b>\n\n"
-                f"💰 <b>Current Price:</b> {cur_str}\n"
-                f"🎯 <b>Target Price:</b> {target_str}\n"
-                f"🏪 <b>Platform:</b> {platform_name}\n\n"
-                f"📉 <i>Your target price has been reached!</i>"
+                f"💰 <b>Current Price:</b> <b>{cur_str}</b>\n"
+                f"🎯 <b>Target Price:</b> <b>{target_str}</b>\n"
+                f"🏪 <b>Platform:</b> <code>{platform_name} Verified</code>\n\n"
+                f"🎉 <i>Your target price has been reached!</i>"
             )
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🛒 Open Product", url=product_info.url)]
+            [InlineKeyboardButton(f"🛒 Open Product on {platform_name}", url=product_info.url)],
+            [
+                InlineKeyboardButton("📊 Price History", callback_data=f"hist_key:{product_key}"),
+                InlineKeyboardButton("❌ Stop Tracking", callback_data=f"rem_key:{product_key}"),
+            ]
         ])
 
         target_chat_id = int(user_id) if str(user_id).lstrip("-").isdigit() else user_id

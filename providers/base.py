@@ -18,6 +18,8 @@ class ProductInfo:
     currency: str = "INR"
     available: bool = True
     last_checked: Optional[str] = None
+    original_price: Optional[float] = None
+    image_url: Optional[str] = None
 
     def __post_init__(self):
         if self.last_checked is None:

@@ -260,6 +260,30 @@ class AmazonProvider(ProductProvider):
                         price = p
                         break
 
+            # 4. Parse Original / List Price (MRP)
+            original_price: Optional[float] = None
+            for orig_sel in (
+                "span.a-price.a-text-price span.a-offscreen",
+                "#basisPrice span.a-offscreen",
+                "span.basisPrice span.a-offscreen",
+            ):
+                orig_elem = soup.select_one(orig_sel)
+                if orig_elem:
+                    op = parse_price_text(orig_elem.get_text())
+                    if op and price and op > price:
+                        original_price = op
+                        break
+
+            # 5. Parse Product Image
+            image_url: Optional[str] = None
+            og_img = soup.find("meta", property="og:image")
+            if og_img and og_img.get("content"):
+                image_url = og_img["content"].strip()
+            if not image_url:
+                img_tag = soup.find(id="landingImage")
+                if img_tag and img_tag.get("src"):
+                    image_url = img_tag["src"].strip()
+
             if title and price is not None:
                 return ProductInfo(
                     platform="amazon",
@@ -269,6 +293,8 @@ class AmazonProvider(ProductProvider):
                     price=price,
                     currency="INR",
                     available=available,
+                    original_price=original_price,
+                    image_url=image_url,
                 )
 
             logger.warning(

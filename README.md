@@ -149,26 +149,43 @@ sudo journalctl -u price-tracker -f
 
 ---
 
-## 🤖 Telegram Bot Commands & Usage
+## 🤖 Telegram Bot Commands & Interactive Usage
 
 Register these commands with `@BotFather` using `/setcommands`:
 ```text
-start - Start the bot & welcome guide
-list - View your tracked products
+start - Welcome guide & quick navigation buttons
+list - View tracked products with interactive action buttons
+check - Manually check current prices now with telemetry stats
+history - View price fluctuation trail and min/max stats
 remove - Stop tracking a product
-history - View price history of a product
-check - Manually check current prices now
 help - Show help and usage guide
 ```
 
-### User Workflow
+### 📱 Enhanced User Workflow (Obsidian Telemetry UX)
+
 1. **Send Link**:
-   User sends `https://www.amazon.in/dp/B09XXXXXXX` or Flipkart link.
-2. **Current Price**:
-   Bot fetches the product title and current selling price.
-3. **Set Alert**:
-   Bot prompts: *"What price should I alert you at? Example: 25000"*.
-4. **Tracking Activated**:
-   User enters target price, and the bot monitors the product on every scheduled interval.
-5. **Alert**:
-   When price $\le$ target, the bot immediately sends an alert with a direct **🛒 Open Product** button.
+   User sends any Amazon.in (`https://www.amazon.in/dp/B0BDK62PDX`) or Flipkart product link.
+2. **Rich Product Card**:
+   The bot extracts the title, verified platform tag (`Amazon.in Verified`), current selling price, and original MRP with discount percentage (`₹19,999 <s>₹24,900</s> (-20%)`).
+3. **One-Tap Target Presets**:
+   Instead of forcing manual typing, the bot presents interactive preset buttons:
+   `[ -5% (₹18,999) ]` `[ -10% (₹17,999) ]` `[ -15% (₹16,999) ]` `[ ❌ Cancel ]`
+   *(User can tap any preset to set the target instantly, or type a custom number).*
+4. **Tracker Registered**:
+   The bot confirms registration with cadence details (`Every 8h via Cron`), next poll estimate, and an inline `[ 🛒 Open Product ]` button.
+5. **Interactive Watchlist (`/list`)**:
+   Shows all tracked items with real-time status badges (`🎯 Target Met!` vs `⏳ Active`). Every product features dedicated buttons:
+   `[ 🛒 Open ]` `[ 📊 History ]` `[ ❌ Del ]` plus `[ 🔄 Check Prices Now ]`.
+6. **Price Fluctuation Trail (`/history`)**:
+   Renders a chronological telemetry price trail:
+   - Recent check points with delta indicators (`📉`, `📈`, `▪️`)
+   - 🟢 All-Time Lowest Price recorded
+   - 🔴 All-Time Highest Price recorded
+   - 📊 Net Fluctuation (`-₹2,009 (-10.1% across 48h)`)
+7. **Instant Price Check (`/check`)**:
+   Runs gentle sequential fetches via `Semaphore(2)`, returning price comparisons (`<s>₹19,999</s> → ₹17,990 (⬇ -₹2,009)`) and runtime telemetry (`Checked in 0.84s • Memory Safe`).
+8. **Crash Alert Notification**:
+   When price drops below target, sends a priority alert card with:
+   - `📉 PRICE CRASH: ₹17,990 (was ₹19,999)`
+   - `💰 SAVED: -₹2,009`
+   - Quick action buttons: `[ 🛒 Open Product ]` `[ 📊 Price History ]` `[ ❌ Stop Tracking ]`.

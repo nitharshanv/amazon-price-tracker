@@ -77,3 +77,74 @@ def clean_title(title: str, max_length: int = 70) -> str:
     if len(cleaned) > max_length:
         return cleaned[:max_length].rstrip() + "…"
     return cleaned
+
+
+def calculate_discount_percent(original_price: Optional[float], current_price: Optional[float]) -> Optional[int]:
+    """Calculate integer percentage discount from original price."""
+    if not original_price or not current_price or original_price <= current_price:
+        return None
+    pct = round(((original_price - current_price) / original_price) * 100)
+    return int(pct) if pct > 0 else None
+
+
+def format_history_report(history_points: list, currency: str = "INR") -> str:
+    """Format price points into a telemetry price trail."""
+    if not history_points:
+        return "<i>No historical price checks recorded yet.</i>"
+
+    prices = [pt.get("price") for pt in history_points if pt.get("price") is not None]
+    if not prices:
+        return "<i>No price data available.</i>"
+
+    lines = []
+    min_price = min(prices)
+    max_price = max(prices)
+
+    # Show up to last 8 checks
+    recent = history_points[-8:]
+    for i, pt in enumerate(recent):
+        p = pt.get("price")
+        ts_str = pt.get("timestamp", "")
+        # Format timestamp nicely if possible
+        date_label = ""
+        if ts_str:
+            try:
+                dt = re.sub(r"\.\d+", "", ts_str).replace("Z", "")
+                parts = dt.split("T")
+                if len(parts) == 2:
+                    date_label = f"{parts[0][5:]} {parts[1][:5]} UTC: "
+            except Exception:
+                date_label = ""
+
+        # Trend indicator compared to previous point
+        trend_icon = "▪️"
+        diff_str = ""
+        if i > 0:
+            prev_p = recent[i - 1].get("price")
+            if prev_p is not None and p != prev_p:
+                delta = p - prev_p
+                if delta < 0:
+                    trend_icon = "📉"
+                    diff_str = f" (⬇ -{format_currency(abs(delta), currency)})"
+                else:
+                    trend_icon = "📈"
+                    diff_str = f" (⬆ +{format_currency(delta, currency)})"
+
+        lines.append(f"{trend_icon} <code>{date_label}</code><b>{format_currency(p, currency)}</b>{diff_str}")
+
+    # Stat summary
+    summary_lines = [
+        "",
+        f"🟢 <b>Lowest Recorded:</b> {format_currency(min_price, currency)}",
+        f"🔴 <b>Highest Recorded:</b> {format_currency(max_price, currency)}",
+    ]
+
+    if len(prices) >= 2:
+        net_diff = prices[-1] - prices[0]
+        net_pct = (net_diff / prices[0]) * 100
+        sign = "+" if net_diff > 0 else ""
+        summary_lines.append(
+            f"📊 <b>Net Fluctuation:</b> {sign}{format_currency(net_diff, currency)} ({sign}{net_pct:.1f}%)"
+        )
+
+    return "\n".join(lines + summary_lines)

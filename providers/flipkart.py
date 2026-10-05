@@ -171,6 +171,22 @@ class FlipkartProvider(ProductProvider):
                         price = p
                         break
 
+            # 4. Parse Original / List Price (MRP)
+            original_price: Optional[float] = None
+            for orig_sel in ("div._3I9_wc._2p6cMde", "div._3I9_wc", "div.yRaY8j", "div._25b18c div._3I9_wc"):
+                orig_elem = soup.select_one(orig_sel)
+                if orig_elem:
+                    op = parse_price_text(orig_elem.get_text())
+                    if op and price and op > price:
+                        original_price = op
+                        break
+
+            # 5. Parse Product Image
+            image_url: Optional[str] = None
+            og_img = soup.find("meta", property="og:image")
+            if og_img and og_img.get("content"):
+                image_url = og_img["content"].strip()
+
             if title and price is not None:
                 return ProductInfo(
                     platform="flipkart",
@@ -180,6 +196,8 @@ class FlipkartProvider(ProductProvider):
                     price=price,
                     currency="INR",
                     available=available,
+                    original_price=original_price,
+                    image_url=image_url,
                 )
 
             logger.warning(
